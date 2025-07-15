@@ -144,7 +144,7 @@ s2 <- s2 %>%
 #before joining, fix all the sh*t that isnt found in both or is a many-to-many
 
 
-# PURPLE COLUMN MEASURES --------
+# PURPLE COLUMN MEASURES START HERE --------
 
 ## use school names to match to rows in datasheet
 library(readxl)
