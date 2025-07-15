@@ -244,7 +244,7 @@ eligibility_counts <- full_join(sebt_counts, primero_counts, by = "AUN") %>%
     diff_reduced = sebt_reduced - primero_reduced,
     AUN=str_replace_all(AUN,"-","")) %>% 
   arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
-  mutate(AUN=as.numeric(AUN))
+  mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
 
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(eligibility_counts,"cj_cl.xlsx")
@@ -314,7 +314,13 @@ parent_name_mismatches <- match1 %>%
   ) %>%
   group_by(sebt_aun9_3) %>%
   summarise(parent_name_mismatch_count = n(), .groups = "drop") %>%
-  rename(AUN = sebt_aun9_3)
+  rename(AUN = sebt_aun9_3) %>% 
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
+
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(parent_name_mismatches,"cs_cv.xlsx")
+
 
 
 
