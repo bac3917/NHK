@@ -152,7 +152,7 @@ mds <- read_excel("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/
                           sheet = "Sheet1", skip = 3)
 mds<-janitor::clean_names(mds)
 mds$aun_2<-as.character(mds$aun_2)
-
+mds<-mds %>% select(aun_2,sfa_name,schl_type)
 ## CG - Total Student Count in PrimeroEdge File (this includes duplicate student records)
 ## CH - Total student count in student upload file (this includes duplicate student records)
 
@@ -238,8 +238,9 @@ eligibility_counts <- full_join(sebt_counts, primero_counts, by = "AUN") %>%
     diff_free = sebt_free - primero_free,
     diff_paid = sebt_paid - primero_paid,
     diff_reduced = sebt_reduced - primero_reduced,
-    AUN=str_replace_all(AUN,"-","")
-  ) %>% arrange(AUN)
+    AUN=str_replace_all(AUN,"-","")) %>% 
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN))
 
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(eligibility_counts,"cj_cl.xlsx")
