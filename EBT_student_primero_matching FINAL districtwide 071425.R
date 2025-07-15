@@ -174,7 +174,8 @@ mds$aun_2<-as.character(mds$aun_2)
                  difference = p_total - s_total)
         
         student_counts_by_aun<-student_counts_by_aun %>% left_join(mds,by=c("AUN"="aun_2"))
-        student_counts_by_aun %>% select(sfa, AUN,s_total,p_total,difference) %>% View()
+        cg_ch<-student_counts_by_aun %>% select(sfa, AUN,s_total,p_total,difference) 
+        write.csv(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.csv")
 
 
 #unmatched
