@@ -89,7 +89,7 @@ p2 <- p2 %>%
 
 ###load the primero files in
 p2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSprimerofiles/primerofiles.rds")
-s2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/ALLstudentfiles.rds")
+s2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSstudentfiles/ALLstudentfiles.rds")
 
 ## find unmatchable IDs -----------------------------------------------------
 
@@ -195,9 +195,6 @@ dups_s2 <- s2 %>% #make groupby...count(join_key) %>% filter(n > 1) %>% left_joi
 
 # Check overlapping duplicate keys
 many_to_many_keys <- inner_join(dups_p2, s2, by = "join_key")
-
-
-
 
 
 
