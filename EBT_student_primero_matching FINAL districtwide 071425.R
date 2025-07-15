@@ -174,9 +174,12 @@ mds$aun_2<-as.character(mds$aun_2)
                  difference = p_total - s_total)
         
         student_counts_by_aun<-student_counts_by_aun %>% left_join(mds,by=c("AUN"="aun_2"))
-        cg_ch<-student_counts_by_aun %>% select(sfa, AUN,s_total,p_total,difference) 
-        write.csv(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.csv")
+        cg_ch<-student_counts_by_aun %>% select(sfa, AUN,s_total,p_total,difference) %>%
+          mutate(AUN=as.numeric(AUN)) %>% arrange(AUN)
+        write_xlsx(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.xlsx")
 
+  
+        
 
 #unmatched
 # Students in p2 not matched in s2
@@ -208,6 +211,9 @@ match1 <- inner_join(p2, s2, by = "join_key")
 #Total student count difference between each district’s file A vs B (indicate which file has more/number missing cases) 
 #Print() missing student info [List student detail (all column variables) for students included in district’s file A but not in file B, and vice versa.] --------
 
+## CJ - Total FREE Student Count PASES File
+## CK - Eligibility: Total FREE Student Count June File
+## CL - Eligibility: Total FREE Student Count Diff (PASES vs June File)
 
 
 #Student eligibility: Number of ‘free’, paid’, and ‘reduced’ for each district for both p and s files 
@@ -235,8 +241,11 @@ eligibility_counts <- full_join(sebt_counts, primero_counts, by = "AUN") %>%
     diff_free = sebt_free - primero_free,
     diff_paid = sebt_paid - primero_paid,
     diff_reduced = sebt_reduced - primero_reduced,
-  )
+    AUN=str_replace_all(AUN,"-","")
+  ) %>% arrange(AUN)
 
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(eligibility_counts,"cj_cl.xlsx")
 
 #PAsecureID?: print() student info for each case where PAsecureID < 10 !!!!! -------------------------------------
 
@@ -290,6 +299,7 @@ school_code_mismatches <- match1 %>%
   rename(AUN = sebt_aun9_3)
 
 # parent guardian first and last ------------------------------------------
+# CT - Matched Students - Parent/Guardian info: Count of matched student cases where June parent firstname ≠ PA-SES parent firstname AND June parent lastname ≠ PA-SES parent lastname
 
 parent_name_mismatches <- match1 %>%
   filter(
@@ -307,7 +317,7 @@ parent_name_mismatches <- match1 %>%
 
 
 # student address ---------------------------------------------------------
-
+# CU - Count Diff Matched Students - Count of matched student cases where PA-SES file student address ≠ June file student address
 standardize_address <- function(x) {
   x %>%
     tolower() %>%
