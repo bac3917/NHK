@@ -179,9 +179,13 @@ mds<-mds %>% select(aun_2,sfa_name,schl_type)
         write_xlsx(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.xlsx")
 
   
-        
 
-#unmatched
+# create Join of P and S files for remaining Deliverables -----------------
+
+        
+#need to de-duplicate/determine way to combat duplicate student records in files before joining
+
+#find unmatched
 # Students in p2 not matched in s2
 unmatched_p2 <- anti_join(p2, s2, by = "join_key")
 
