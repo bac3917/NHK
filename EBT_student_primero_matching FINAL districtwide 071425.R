@@ -262,32 +262,10 @@ sIDcounts <- s2 %>%
     )
   )
 
-pIDcounts <- p2 %>%
-  mutate(
-    p10digitID = case_when(
-      is.na(primero_pasecureid) ~ NA_character_,
-      nchar(primero_pasecureid) == 10 ~ "TRUE",
-      TRUE ~ as.character(nchar(primero_pasecureid))
-    )
-  )
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(eligibility_counts,"cw.xlsx")
 
-"sebt10digitID_summary" <- sIDcounts %>%
-  group_by(sebt_aun9_3) %>%
-  summarise(
-    "s10digit_pasecureIDs" = sum(s10digitID == TRUE, na.rm = TRUE),
-    s_not_pasecure = sum(!s10digitID %in% c(TRUE, NA), na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  rename(AUN = sebt_aun9_3)
 
-"primero10digitID_summary" <- pIDcounts %>%
-  group_by(primero_aun9_3) %>%
-  summarise(
-    "p10digit_pasecureIDs" = sum(p10digitID == TRUE, na.rm = TRUE),
-    p_not_pasecure = sum(!p10digitID %in% c(TRUE, NA), na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  rename(AUN = primero_aun9_3)
 
 #print students that don’t have the following variables match between s and p: --------
 
@@ -341,6 +319,7 @@ standardize_address <- function(x) {
     str_replace_all("\\.", "")
 }
 
+
 #similarity score
 match1 <- match1 %>%
   mutate(
@@ -353,6 +332,7 @@ match1 <- match1 %>%
         method = "jw" #jarowinkler
       ), NA_real_))
 
+# address mismatches (column CU)
 address_mismatches <- match1 %>%
   filter(!is.na(addr_similarity)) %>%
   filter(addr_similarity < 0.9) %>%
@@ -361,7 +341,7 @@ address_mismatches <- match1 %>%
   rename(AUN = sebt_aun9_3)
 
 
-# case number -------------------------------------------------------------
+# column CV case number -------------------------------------------------------------
 
 case_number_mismatches <- match1 %>%
   filter(!is.na(sebt_case_number), !is.na(primero_case_number)) %>%
@@ -369,6 +349,37 @@ case_number_mismatches <- match1 %>%
   group_by(sebt_aun9_3) %>%
   summarise(case_number_mismatch_count = n(), .groups = "drop") %>%
   rename(AUN = sebt_aun9_3)
+
+# column CW ----
+pIDcounts <- p2 %>%
+  mutate(
+    p10digitID = case_when(
+      is.na(primero_pasecureid) ~ NA_character_,
+      nchar(primero_pasecureid) == 10 ~ "TRUE",
+      TRUE ~ as.character(nchar(primero_pasecureid))
+    )
+  )
+
+"sebt10digitID_summary" <- sIDcounts %>%
+  group_by(sebt_aun9_3) %>%
+  summarise(
+    "s10digit_pasecureIDs" = sum(s10digitID == TRUE, na.rm = TRUE),
+    s_not_pasecure = sum(!s10digitID %in% c(TRUE, NA), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  rename(AUN = sebt_aun9_3)
+
+"primero10digitID_summary" <- pIDcounts %>%
+  group_by(primero_aun9_3) %>%
+  summarise(
+    "p10digit_pasecureIDs" = sum(p10digitID == TRUE, na.rm = TRUE),
+    p_not_pasecure = sum(!p10digitID %in% c(TRUE, NA), na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  rename(AUN = primero_aun9_3)
+
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(eligibility_counts,"cw.xlsx")
 
 
 # print summary for masterdatasheet ---------------------------------------
