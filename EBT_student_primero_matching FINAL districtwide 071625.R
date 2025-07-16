@@ -33,7 +33,7 @@ p2<-p2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(ev
 s2<-s2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
 
 # Before joining, ensure each file has best unique set of cases
-# if duplicated join_key select the row with least missing data
+# if duplicated join_key slice to the row with least missing data
 p_undup<-p2 %>% 
   group_by(join_key) %>%  slice_min(missing_count, with_ties = FALSE) %>% 
   ungroup()
@@ -284,6 +284,7 @@ write_xlsx(temp,"cy.xlsx")
 
 # Columns CZ and DA ---------------
 
+sdups<-s2 %>% group_by(join_key) %>% summarise(n=n()) %>% filter(n>=2)
 
 # alternatively put all vars for masterdatasheet into one file ------------------------------------
 
