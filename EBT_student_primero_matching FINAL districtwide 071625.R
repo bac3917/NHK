@@ -24,14 +24,12 @@ p2 <- p2 %>%
   mutate(join_key = if_else( nchar(primero_pasecureid)>10 | nchar(primero_pasecureid<10) , join_key2,join_key1))
 tabyl(duplicated(p2$join_key))
 
-# count number of missing columns
-p2<-p2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
-
 s2 <- s2 %>%
   mutate(join_key = if_else( nchar(sebt_pasecureid)>10 | nchar(sebt_pasecureid<10) , join_key2,join_key1))
 tabyl(duplicated(s2$join_key))
 
 # count number of missing columns
+p2<-p2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
 s2<-s2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
 
 # Before joining, ensure each file has best unique set of cases
