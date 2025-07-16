@@ -8,43 +8,9 @@ library(janitor);library(expss); library(stringdist); library(writexl)
 p2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSprimerofiles/primerofiles.rds")
 s2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSstudentfiles/ALLstudentfiles.rds")
 
-## find unmatchable IDs -----------------------------------------------------
+## Create unique IDs  --------------------------------------------------------
 
-# Extract PAsecureID + AUN from Primero and SEBT files
-p_ids <- p2 %>%
-  filter(!is.na(primero_pasecureid), primero_pasecureid != "",
-         !is.na(primero_aun9_3), primero_aun9_3 != "") %>%
-  select(primero_aun9_3, primero_pasecureid, primero_student_first_name, primero_student_last_name) %>%
-  distinct() %>%
-  rename(AUN = primero_aun9_3, PAsecureID = primero_pasecureid, FirstName = primero_student_first_name,
-         LastName = primero_student_last_name)
-tabyl(duplicated(p_ids$PAsecureID))
-
-s_ids <- s2 %>%
-  filter(!is.na(sebt_pasecureid) & sebt_pasecureid != "" &
-         !is.na(sebt_aun9_3) & sebt_aun9_3 != "") %>%
-  select(sebt_aun9_3, sebt_pasecureid, sebt_student_first_name, sebt_student_last_name) %>%
-  distinct() %>%
-  rename(AUN = sebt_aun9_3, PAsecureID = sebt_pasecureid, FirstName = sebt_student_first_name,
-         LastName = sebt_student_last_name)
-tabyl(duplicated(s_ids$PAsecureID))
-
-# Compare within matching AUNs
-only_in_primero <- anti_join(p_ids, s_ids, by = c("AUN", "PAsecureID")) %>%
-  mutate(Source = "Primero")
-
-only_in_sebt <- anti_join(s_ids, p_ids, by = c("AUN", "PAsecureID")) %>%
-  mutate(Source = "SEBT")
-
-# Combine and print
-unmatched_ids <- bind_rows(only_in_primero, only_in_sebt)  #almost 1.4 million cases?
-
-
-
-
-## perform the join --------------------------------------------------------
-
-#Create join keys
+# Create join keys
 p2 <- p2 %>%
   mutate(join_key1 = paste0(primero_aun9_3, "_",primero_pasecureid),
          join_key2 = paste0(primero_aun9_3, "_", primero_student_first_name, "_", primero_student_last_name, "_", primero_student_dob))
@@ -53,17 +19,24 @@ s2 <- s2 %>%
   mutate(join_key1 = paste0(sebt_aun9_3, "_", sebt_pasecureid ),
          join_key2 = paste0(sebt_aun9_3, "_", sebt_student_first_name, "_", sebt_student_last_name, "_", sebt_student_dob))
 
-#decide which key to use
+# Decide which key to use
 p2 <- p2 %>%
   mutate(join_key = if_else( nchar(primero_pasecureid)>10 | nchar(primero_pasecureid<10) , join_key2,join_key1))
+tabyl(duplicated(p2$join_key))
+
+# count number of missing columns
+p2<-p2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
 
 s2 <- s2 %>%
   mutate(join_key = if_else( nchar(sebt_pasecureid)>10 | nchar(sebt_pasecureid<10) , join_key2,join_key1))
+tabyl(duplicated(s2$join_key))
 
-#before joining, fix all the sh*t that isnt found in both or is a many-to-many
+# count number of missing columns
+s2<-s2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
 
-
-# PURPLE COLUMN MEASURES START HERE --------
+# Before joining, ensure each file has best unique set of cases
+p_undup<-p2 %>% group_by(join_key) %>% slice(1)
+s_undup<-s2 %>% group_by(join_key) %>% slice(1)
 
 ## use school names to match to rows in datasheet
 library(readxl)
@@ -72,15 +45,18 @@ mds <- read_excel("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/
 mds<-janitor::clean_names(mds)
 mds$aun_2<-as.character(mds$aun_2)
 mds<-mds %>% select(aun_2,sfa_name,schl_type)
+
+# PURPLE COLUMN MEASURES START HERE --------
+
 ## CG - Total Student Count in PrimeroEdge File (this includes duplicate student records)
 ## CH - Total student count in student upload file (this includes duplicate student records)
 
-        # Count students per AUN in each dataset
-        p_counts <- p2 %>%
+        # Count students per AUN in each dataset using the UNIQUE student set
+        p_counts <- p_undup %>%
           group_by(primero_aun9_3) %>%
           summarise(p_total = n(), .groups = "drop")
         
-        s_counts <- s2 %>%
+        s_counts <- s_undup %>%
           group_by(sebt_aun9_3) %>%
           summarise(s_total = n(), .groups = "drop")
 
