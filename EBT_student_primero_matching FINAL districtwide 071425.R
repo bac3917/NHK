@@ -259,15 +259,37 @@ sIDcounts <- s2 %>%
       is.na(sebt_pasecureid) ~ NA_character_,
       nchar(sebt_pasecureid) == 10 ~ "TRUE",
       TRUE ~ as.character(nchar(sebt_pasecureid))
-    )
-  )
+    )   ) %>%
+  mutate(under10chars=if_else(s10digitID=="TRUE",1,0)) %>%
+ group_by(sebt_aun9_3) %>% 
+  summarise(student_Under10=sum(under10chars))
+  
 
+pIDcounts <- p2 %>%
+  mutate(
+    p10digitID = case_when(
+      is.na(primero_pasecureid) ~ NA_character_,
+      nchar(primero_pasecureid) == 10 ~ "TRUE",
+      TRUE ~ as.character(nchar(primero_pasecureid))
+    )   ) %>%
+  mutate(under10chars=if_else(p10digitID=="TRUE",1,0)) %>%
+  group_by(primero_aun9_3) %>% 
+  summarise(primero_Under10=sum(under10chars))
+
+
+temp<-sIDcounts %>% left_join(pIDcounts,by=c("sebt_aun9_3"="primero_aun9_3")) %>%
+  rename(AUN=sebt_aun9_3) %>% 
+  mutate(AUN=as.numeric(str_replace_all(AUN,"-",""))) %>% arrange(AUN)
+head(temp)
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
-write_xlsx(eligibility_counts,"cw.xlsx")
+write_xlsx(temp,"cw.xlsx")
 
 
 
 #print students that don’t have the following variables match between s and p: --------
+
+# column CS: Matched Students - Site IDs Count Diff
+
 
 # siteID -----------------------------------------------------------------
 
@@ -350,7 +372,7 @@ case_number_mismatches <- match1 %>%
   summarise(case_number_mismatch_count = n(), .groups = "drop") %>%
   rename(AUN = sebt_aun9_3)
 
-# column CW ----
+# column CW --------------------------------
 pIDcounts <- p2 %>%
   mutate(
     p10digitID = case_when(
@@ -382,7 +404,7 @@ setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and
 write_xlsx(eligibility_counts,"cw.xlsx")
 
 
-# print summary for masterdatasheet ---------------------------------------
+# alternatively put all vars for masterdatasheet into one file ------------------------------------
 
 summarydata_all <- student_counts_by_aun %>%
   full_join(eligibility_counts, by = "AUN") %>%
