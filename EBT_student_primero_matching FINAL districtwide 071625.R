@@ -37,12 +37,13 @@ s2<-s2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(ev
 p_undup<-p2 %>% 
   group_by(join_key) %>%  slice_min(missing_count, with_ties = FALSE) %>% 
   ungroup()
-saveRDS(p_undup,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/p_undup.RDS")
+#saveRDS(p_undup,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/p_undup.RDS")
 s_undup<-s2 %>% 
   group_by(join_key) %>%  slice_min(missing_count, with_ties = FALSE) %>% 
   ungroup()
-saveRDS(s_undup,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/s_undup.RDS")
+#saveRDS(s_undup,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/s_undup.RDS")
 
+# Begin analysis here with p_undup and s_undup!
 
 ## use school names to match to rows in datasheet
 library(readxl)
@@ -53,6 +54,11 @@ mds$aun_2<-as.character(mds$aun_2)
 mds<-mds %>% select(aun_2,sfa_name,schl_type)
 
 # PURPLE COLUMN MEASURES START HERE --------
+# analyses are based on records that match by `join_key` for unduplicated students
+match1 <- inner_join(p_undup, s_undup, by = "join_key")
+tabyl(duplicated(match1$join_key))
+tabyl(duplicated(match1$join_key))
+
 
 ## CG - Total Student Count in PrimeroEdge File (this includes duplicate student records)
 ## CH - Total student count in student upload file (this includes duplicate student records)
@@ -75,18 +81,12 @@ mds<-mds %>% select(aun_2,sfa_name,schl_type)
                  difference = p_total - s_total)
         
         student_counts_by_aun<-student_counts_by_aun %>% left_join(mds,by=c("AUN"="aun_2"))
-        cg_ch<-student_counts_by_aun %>% select(sfa, AUN,s_total,p_total,difference) %>%
+        cg_ch<-student_counts_by_aun %>% select(sfa_name, AUN,s_total,p_total,difference) %>%
           mutate(AUN=as.numeric(AUN)) %>% arrange(AUN)
         write_xlsx(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.xlsx")
 
   
-
-# create Join of P and S files for remaining Deliverables -----------------
-
-        
-#need to de-duplicate/determine way to combat duplicate student records in files before joining
-
-#find unmatched
+# find unmatched
 # Students in p2 not matched in s2
 unmatched_p2 <- anti_join(p2, s2, by = "join_key")
 
@@ -100,14 +100,6 @@ dups_s2 <- s2 %>% #make groupby...count(join_key) %>% filter(n > 1) %>% left_joi
 
 # Check overlapping duplicate keys
 many_to_many_keys <- inner_join(dups_p2, s2, by = "join_key")
-
-
-
-match1 <- inner_join(p_undup, s_undup, by = "join_key")
-tabyl(duplicated(match1$primero_pasecureid))
-tabyl(duplicated(match1$sebt_pasecureid))
-
-#AUN first: all matches/comparisons should be grouped by AUN (district) before anything! Matching p and s variables for each district -------
 
 
 #Total student count difference between each district’s file A vs B (indicate which file has more/number missing cases) 
@@ -167,8 +159,8 @@ school_code_mismatches <- match1 %>%
   summarise(school_code_mismatch_count = n(), .groups = "drop") %>%
   rename(AUN = sebt_aun9_3)
 
-# parent guardian first and last ------------------------------------------
-# CT - Matched Students - Parent/Guardian info: Count of matched student cases where June parent firstname ≠ PA-SES parent firstname AND June parent lastname ≠ PA-SES parent lastname
+# Column CT ------
+# - Parent/Guardian info: Count of matched student cases where June parent firstname ≠ PA-SES parent firstname AND June parent lastname ≠ PA-SES parent lastname
 
 parent_name_mismatches <- match1 %>%
   filter(
@@ -188,11 +180,8 @@ parent_name_mismatches <- match1 %>%
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(parent_name_mismatches,"cs_cv.xlsx")
 
-
-
-
-# student address ---------------------------------------------------------
-# CU - Count Diff Matched Students - Count of matched student cases where PA-SES file student address ≠ June file student address
+# Column CU  ---------------------------------------------------------
+# Count Diff Matched Students - Count of matched student cases where PA-SES file student address ≠ June file student address
 standardize_address <- function(x) {
   x %>%
     tolower() %>%
