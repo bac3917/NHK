@@ -33,8 +33,14 @@ p2<-p2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(ev
 s2<-s2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
 
 # Before joining, ensure each file has best unique set of cases
-p_undup<-p2 %>% group_by(join_key) %>% slice(1)
-s_undup<-s2 %>% group_by(join_key) %>% slice(1)
+p_undup<-p2 %>% 
+  group_by(join_key) %>%  slice_min(missing_count, with_ties = FALSE) %>% 
+  ungroup()
+
+
+s_undup<-s2 %>% 
+  group_by(join_key) %>%  slice_min(missing_count, with_ties = FALSE) %>% 
+  ungroup()
 
 ## use school names to match to rows in datasheet
 library(readxl)
