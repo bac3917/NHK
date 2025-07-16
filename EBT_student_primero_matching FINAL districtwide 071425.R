@@ -101,6 +101,7 @@ p_ids <- p2 %>%
   distinct() %>%
   rename(AUN = primero_aun9_3, PAsecureID = primero_pasecureid, FirstName = primero_student_first_name,
          LastName = primero_student_last_name)
+tabyl(duplicated(p_ids$PAsecureID))
 
 s_ids <- s2 %>%
   filter(!is.na(sebt_pasecureid) & sebt_pasecureid != "" &
@@ -109,6 +110,7 @@ s_ids <- s2 %>%
   distinct() %>%
   rename(AUN = sebt_aun9_3, PAsecureID = sebt_pasecureid, FirstName = sebt_student_first_name,
          LastName = sebt_student_last_name)
+tabyl(duplicated(s_ids$PAsecureID))
 
 # Compare within matching AUNs
 only_in_primero <- anti_join(p_ids, s_ids, by = c("AUN", "PAsecureID")) %>%
@@ -203,15 +205,16 @@ many_to_many_keys <- inner_join(dups_p2, s2, by = "join_key")
 
 
 match1 <- inner_join(p2, s2, by = "join_key")
-
-
+tabyl(duplicated(match1$primero_pasecureid))
+tabyl(duplicated(match1$sebt_pasecureid))
 
 #AUN first: all matches/comparisons should be grouped by AUN (district) before anything! Matching p and s variables for each district -------
 
 
 #Total student count difference between each district’s file A vs B (indicate which file has more/number missing cases) 
-#Print() missing student info [List student detail (all column variables) for students included in district’s file A but not in file B, and vice versa.] --------
+#Print() missing student info [List student detail (all column variables) for students included in district’s file A but not in file B, and vice versa.] 
 
+# Columns CJ - CL --------------
 ## CJ - Total FREE Student Count PASES File
 ## CK - Eligibility: Total FREE Student Count June File
 ## CL - Eligibility: Total FREE Student Count Diff (PASES vs June File)
@@ -248,41 +251,6 @@ eligibility_counts <- full_join(sebt_counts, primero_counts, by = "AUN") %>%
 
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(eligibility_counts,"cj_cl.xlsx")
-
-#PAsecureID?: print() student info for each case where PAsecureID < 10 !!!!! -------------------------------------
-
-#new variable: s10digitID and p10digitID
-
-sIDcounts <- s2 %>%
-  mutate(
-    s10digitID = case_when(
-      is.na(sebt_pasecureid) ~ NA_character_,
-      nchar(sebt_pasecureid) == 10 ~ "TRUE",
-      TRUE ~ as.character(nchar(sebt_pasecureid))
-    )   ) %>%
-  mutate(under10chars=if_else(s10digitID=="TRUE",1,0)) %>%
- group_by(sebt_aun9_3) %>% 
-  summarise(student_Under10=sum(under10chars))
-  
-
-pIDcounts <- p2 %>%
-  mutate(
-    p10digitID = case_when(
-      is.na(primero_pasecureid) ~ NA_character_,
-      nchar(primero_pasecureid) == 10 ~ "TRUE",
-      TRUE ~ as.character(nchar(primero_pasecureid))
-    )   ) %>%
-  mutate(under10chars=if_else(p10digitID=="TRUE",1,0)) %>%
-  group_by(primero_aun9_3) %>% 
-  summarise(primero_Under10=sum(under10chars))
-
-
-temp<-sIDcounts %>% left_join(pIDcounts,by=c("sebt_aun9_3"="primero_aun9_3")) %>%
-  rename(AUN=sebt_aun9_3) %>% 
-  mutate(AUN=as.numeric(str_replace_all(AUN,"-",""))) %>% arrange(AUN)
-head(temp);tail(temp)
-setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
-write_xlsx(temp,"cw.xlsx")
 
 
 
@@ -372,36 +340,39 @@ case_number_mismatches <- match1 %>%
   summarise(case_number_mismatch_count = n(), .groups = "drop") %>%
   rename(AUN = sebt_aun9_3)
 
-# column CW --------------------------------
+# column CW & CX --------------------------------
+
+sIDcounts <- s2 %>%
+  mutate(
+    s10digitID = case_when(
+      is.na(sebt_pasecureid) ~ NA_character_,
+      nchar(sebt_pasecureid) == 10 ~ "TRUE",
+      TRUE ~ as.character(nchar(sebt_pasecureid))
+    )   ) %>%
+  mutate(under10chars=if_else(s10digitID=="TRUE",1,0)) %>%
+  group_by(sebt_aun9_3) %>% 
+  summarise(student_Under10=sum(under10chars))
+
+
 pIDcounts <- p2 %>%
   mutate(
     p10digitID = case_when(
       is.na(primero_pasecureid) ~ NA_character_,
       nchar(primero_pasecureid) == 10 ~ "TRUE",
       TRUE ~ as.character(nchar(primero_pasecureid))
-    )
-  )
+    )   ) %>%
+  mutate(under10chars=if_else(p10digitID=="TRUE",1,0)) %>%
+  group_by(primero_aun9_3) %>% 
+  summarise(primero_Under10=sum(under10chars))
 
-"sebt10digitID_summary" <- sIDcounts %>%
-  group_by(sebt_aun9_3) %>%
-  summarise(
-    "s10digit_pasecureIDs" = sum(s10digitID == TRUE, na.rm = TRUE),
-    s_not_pasecure = sum(!s10digitID %in% c(TRUE, NA), na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  rename(AUN = sebt_aun9_3)
 
-"primero10digitID_summary" <- pIDcounts %>%
-  group_by(primero_aun9_3) %>%
-  summarise(
-    "p10digit_pasecureIDs" = sum(p10digitID == TRUE, na.rm = TRUE),
-    p_not_pasecure = sum(!p10digitID %in% c(TRUE, NA), na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  rename(AUN = primero_aun9_3)
-
+temp<-sIDcounts %>% left_join(pIDcounts,by=c("sebt_aun9_3"="primero_aun9_3")) %>%
+  rename(AUN=sebt_aun9_3) %>% 
+  mutate(AUN=as.numeric(str_replace_all(AUN,"-",""))) %>% arrange(AUN)
+head(temp);tail(temp)
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
-write_xlsx(eligibility_counts,"cw.xlsx")
+write_xlsx(temp,"cw.xlsx")
+
 
 
 # alternatively put all vars for masterdatasheet into one file ------------------------------------
