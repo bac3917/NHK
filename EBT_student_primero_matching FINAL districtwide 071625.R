@@ -33,14 +33,16 @@ p2<-p2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(ev
 s2<-s2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
 
 # Before joining, ensure each file has best unique set of cases
+# if duplicated join_key select the row with least missing data
 p_undup<-p2 %>% 
   group_by(join_key) %>%  slice_min(missing_count, with_ties = FALSE) %>% 
   ungroup()
-
-
+saveRDS(p_undup,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/p_undup.RDS")
 s_undup<-s2 %>% 
   group_by(join_key) %>%  slice_min(missing_count, with_ties = FALSE) %>% 
   ungroup()
+saveRDS(s_undup,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/s_undup.RDS")
+
 
 ## use school names to match to rows in datasheet
 library(readxl)
@@ -101,7 +103,7 @@ many_to_many_keys <- inner_join(dups_p2, s2, by = "join_key")
 
 
 
-match1 <- inner_join(p2, s2, by = "join_key")
+match1 <- inner_join(p_undup, s_undup, by = "join_key")
 tabyl(duplicated(match1$primero_pasecureid))
 tabyl(duplicated(match1$sebt_pasecureid))
 
@@ -239,7 +241,7 @@ case_number_mismatches <- match1 %>%
 
 # column CW & CX --------------------------------
 
-sIDcounts <- s2 %>%
+sIDcounts <- s_undup %>%
   mutate(
     s10digitID = case_when(
       is.na(sebt_pasecureid) ~ NA_character_,
@@ -251,7 +253,7 @@ sIDcounts <- s2 %>%
   summarise(student_Under10=sum(under10chars))
 
 
-pIDcounts <- p2 %>%
+pIDcounts <- p_undup %>%
   mutate(
     p10digitID = case_when(
       is.na(primero_pasecureid) ~ NA_character_,
