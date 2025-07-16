@@ -111,8 +111,8 @@ many_to_many_keys <- inner_join(dups_p2, s2, by = "join_key")
 ## CL - Eligibility: Total FREE Student Count Diff (PASES vs June File)
 
 
-#Student eligibility: Number of ‘free’, paid’, and ‘reduced’ for each district for both p and s files 
-#Total Count diff for each eligibility type between p and s --------
+# Student eligibility: Number of ‘free’, paid’, and ‘reduced’ for each district for both p and s files 
+# Total Count diff for each eligibility type between p and s 
 
 # Function: count all elig by AUN
 count_eligibility <- function(df, aun_col, elig_col, prefix) {
@@ -143,21 +143,19 @@ eligibility_counts <- full_join(sebt_counts, primero_counts, by = "AUN") %>%
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(eligibility_counts,"cj_cl.xlsx")
 
-
-
-#print students that don’t have the following variables match between s and p: --------
-
-# column CS: Matched Students - Site IDs Count Diff
-
-
-# siteID -----------------------------------------------------------------
-
+# Column CS: Matched Students - Site IDs Count Diff -----
 school_code_mismatches <- match1 %>%
   filter(!is.na(sebt_school_code4), !is.na(primero_school_code4)) %>%
   filter(sebt_school_code4 != primero_school_code4) %>%
   group_by(sebt_aun9_3) %>%
   summarise(school_code_mismatch_count = n(), .groups = "drop") %>%
-  rename(AUN = sebt_aun9_3)
+  rename(AUN = sebt_aun9_3) %>% mutate(AUN=str_replace_all(AUN,"-","")) %>%
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
+
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(school_code_mismatches,"cs.xlsx")
+
 
 # Column CT ------
 # - Parent/Guardian info: Count of matched student cases where June parent firstname ≠ PA-SES parent firstname AND June parent lastname ≠ PA-SES parent lastname
@@ -173,12 +171,12 @@ parent_name_mismatches <- match1 %>%
   ) %>%
   group_by(sebt_aun9_3) %>%
   summarise(parent_name_mismatch_count = n(), .groups = "drop") %>%
-  rename(AUN = sebt_aun9_3) %>% 
+  rename(AUN = sebt_aun9_3) %>% mutate(AUN=str_replace_all(AUN,"-","")) %>%
   arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
   mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
 
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
-write_xlsx(parent_name_mismatches,"cs_cv.xlsx")
+write_xlsx(parent_name_mismatches,"ct.xlsx")
 
 # Column CU  ---------------------------------------------------------
 # Count Diff Matched Students - Count of matched student cases where PA-SES file student address ≠ June file student address
@@ -199,6 +197,8 @@ standardize_address <- function(x) {
 
 
 #similarity score
+match1$sebt_student_address1<-iconv(match1$sebt_student_address1)
+match1$primero_student_address1<-iconv(match1$primero_student_address1)
 match1 <- match1 %>%
   mutate(
     addr_similarity = ifelse(
@@ -216,10 +216,16 @@ address_mismatches <- match1 %>%
   filter(addr_similarity < 0.9) %>%
   group_by(sebt_aun9_3) %>%
   summarise(address_mismatch_count = n(), .groups = "drop") %>%
-  rename(AUN = sebt_aun9_3)
+  rename(AUN = sebt_aun9_3) %>% 
+  mutate(AUN=str_replace_all(AUN,"-","")) %>%
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
+
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(address_mismatches,"cu.xlsx")
 
 
-# column CV case number -------------------------------------------------------------
+# Column CV case number -------------------------------------------------------------
 
 case_number_mismatches <- match1 %>%
   filter(!is.na(sebt_case_number), !is.na(primero_case_number)) %>%
@@ -228,7 +234,7 @@ case_number_mismatches <- match1 %>%
   summarise(case_number_mismatch_count = n(), .groups = "drop") %>%
   rename(AUN = sebt_aun9_3)
 
-# column CW & CX --------------------------------
+# Column CW & CX --------------------------------
 
 sIDcounts <- s_undup %>%
   mutate(
@@ -256,11 +262,27 @@ pIDcounts <- p_undup %>%
 
 temp<-sIDcounts %>% left_join(pIDcounts,by=c("sebt_aun9_3"="primero_aun9_3")) %>%
   rename(AUN=sebt_aun9_3) %>% 
-  mutate(AUN=as.numeric(str_replace_all(AUN,"-",""))) %>% arrange(AUN)
+  mutate(AUN=str_replace_all(AUN,"-","")) %>% 
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
+
 head(temp);tail(temp)
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(temp,"cw.xlsx")
+temp %>% filter(str_detect(sfa_name,"First"))
 
+
+# Column CY --------------------------------
+# number of students per AUN
+
+temp<-match1 %>% group_by(sebt_aun9_3) %>%
+  summarise(n=n()) %>% mutate(AUN=str_replace_all(sebt_aun9_3,"-","")) %>%
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(temp,"cy.xlsx")
+
+# Columns CZ and DA ---------------
 
 
 # alternatively put all vars for masterdatasheet into one file ------------------------------------
@@ -332,3 +354,14 @@ data_list <- lapply(rds_files, readRDS)
 combined_data <- do.call(rbind, data_list)
 
 saveRDS(filtered_data, file = file.path(folder_path, "ALLstudentfiles.rds"))
+
+
+# Examine the Master Data Sheet ------
+library(readxl)
+m <- read_excel("//csc-profiles/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/NKH Master Data Sheet_local_copy.xlsx", 
+                skip = 3)
+
+m$missingaddresscount<-ifelse(is.na(m$`Matched Students -  Student Address Count Diff`),1,0)
+
+# missing data far more likeley among Charter and PRivate LEAs
+m %>% tabyl(`Schl Type` , missingaddresscount) %>% adorn_percentages()
