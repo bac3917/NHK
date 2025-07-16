@@ -4,7 +4,7 @@ library(readxl);library(tidyverse); library(tidyr); library(dplyr)
 library(janitor);library(expss); library(stringdist); library(writexl)
 
 
-###load the primero files in
+# Load the sebt & primero files in
 p2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSprimerofiles/primerofiles.rds")
 s2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSstudentfiles/ALLstudentfiles.rds")
 
