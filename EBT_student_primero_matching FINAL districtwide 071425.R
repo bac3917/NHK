@@ -280,7 +280,7 @@ pIDcounts <- p2 %>%
 temp<-sIDcounts %>% left_join(pIDcounts,by=c("sebt_aun9_3"="primero_aun9_3")) %>%
   rename(AUN=sebt_aun9_3) %>% 
   mutate(AUN=as.numeric(str_replace_all(AUN,"-",""))) %>% arrange(AUN)
-head(temp)
+head(temp);tail(temp)
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(temp,"cw.xlsx")
 
