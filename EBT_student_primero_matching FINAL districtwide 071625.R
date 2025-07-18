@@ -298,9 +298,17 @@ write_xlsx(temp,"cy.xlsx")
 sdups<-s2 %>% group_by(join_key) %>% 
   summarise(n=n(), sebt_aun9_3=first(sebt_aun9_3)) %>%
   rename(AUN = sebt_aun9_3) %>% mutate(AUN=str_replace_all(AUN,"-","")) %>%
-  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  arrange(AUN) %>% 
+  left_join(mds,by=c("AUN"="aun_2")) %>%
   mutate(AUN=as.numeric(AUN)) %>% # need to match format in excel for successful `XLOOKUP`
-  group_by(AUN) %>% summarise(numdups=sum(if_else(n==1,0,n)))
+  group_by(AUN) %>% summarise(numdupssum=sum(if_else(n==1,0,n)),
+                                             numdups=(if_else(n==1,0,n)))
+
+# examine 113363103;
+sdups %>% filter(AUN==113363103 | AUN==113362203) %>% View()
+temp<-s2 %>% group_by(join_key) %>%
+  summarise(n=n(),auns_per_student=n_distinct(sebt_aun9_3), sebt_aun9_3=first(sebt_aun9_3))
+
 
 pdups<-p2 %>% group_by(join_key) %>% 
   summarise(n=n(), primero_aun9_3=first(primero_aun9_3)) %>%
@@ -308,7 +316,7 @@ pdups<-p2 %>% group_by(join_key) %>%
   arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
   mutate(AUN=as.numeric(AUN)) %>% # need to match format in excel for successful `XLOOKUP`
   group_by(AUN) %>% summarise(numdups=sum(if_else(n==1,0,n)))
-
+fre(pdups$numdups)
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(pdups,"cz.xlsx")
 write_xlsx(sdups,"da.xlsx")
