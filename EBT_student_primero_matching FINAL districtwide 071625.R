@@ -294,15 +294,15 @@ setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and
 write_xlsx(temp,"cy.xlsx")
 
 # Columns CZ and DA ---------------
-
-sdups<-s2 %>% group_by(join_key) %>% 
-  summarise(n=n(), sebt_aun9_3=first(sebt_aun9_3)) %>%
-  rename(AUN = sebt_aun9_3) %>% mutate(AUN=str_replace_all(AUN,"-","")) %>%
+sdups<-s2 %>% 
+  group_by(join_key) %>% 
+  summarise(n=n(), AUN=first(sebt_aun9_3)) %>%
+  mutate(AUN=str_replace_all(AUN,"-","")) %>%
   arrange(AUN) %>% 
   left_join(mds,by=c("AUN"="aun_2")) %>%
-  mutate(AUN=as.numeric(AUN)) %>% # need to match format in excel for successful `XLOOKUP`
-  group_by(AUN) %>% summarise(numdupssum=sum(if_else(n==1,0,n)),
-                                             numdups=(if_else(n==1,0,n)))
+  group_by(AUN) %>%
+  # how many records have n>1?
+  summarise(num_duplicated_join_keys = sum(n>1),numsts=n(), .groups = "drop")
 
 # examine 113363103;
 sdups %>% filter(AUN==113363103 | AUN==113362203) %>% View()
@@ -315,8 +315,9 @@ pdups<-p2 %>% group_by(join_key) %>%
   rename(AUN = primero_aun9_3) %>% mutate(AUN=str_replace_all(AUN,"-","")) %>%
   arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
   mutate(AUN=as.numeric(AUN)) %>% # need to match format in excel for successful `XLOOKUP`
-  group_by(AUN) %>% summarise(numdups=sum(if_else(n==1,0,n)))
-fre(pdups$numdups)
+  group_by(AUN) %>% 
+  summarise(numdupssum=sum(if_else(n==1,0,n)))
+fre(pdups$numdupssum)
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
 write_xlsx(pdups,"cz.xlsx")
 write_xlsx(sdups,"da.xlsx")
