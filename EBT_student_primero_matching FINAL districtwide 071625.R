@@ -50,7 +50,7 @@ p_undup<-readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/N
 
 # Begin analysis here with p_undup and s_undup!
 
-## use school names to match to rows in datasheet
+# use school names to match to rows in datasheet
 library(readxl)
 mds <- read_excel("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/NKH Master Data Sheet_local_copy.xlsx",
                           sheet = "Sheet1", skip = 3)
@@ -295,7 +295,23 @@ write_xlsx(temp,"cy.xlsx")
 
 # Columns CZ and DA ---------------
 
-sdups<-s2 %>% group_by(join_key) %>% summarise(n=n()) %>% filter(n>=2)
+sdups<-s2 %>% group_by(join_key) %>% 
+  summarise(n=n(), sebt_aun9_3=first(sebt_aun9_3)) %>%
+  rename(AUN = sebt_aun9_3) %>% mutate(AUN=str_replace_all(AUN,"-","")) %>%
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN)) %>% # need to match format in excel for successful `XLOOKUP`
+  group_by(AUN) %>% summarise(numdups=sum(if_else(n==1,0,n)))
+
+pdups<-p2 %>% group_by(join_key) %>% 
+  summarise(n=n(), primero_aun9_3=first(primero_aun9_3)) %>%
+  rename(AUN = primero_aun9_3) %>% mutate(AUN=str_replace_all(AUN,"-","")) %>%
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN)) %>% # need to match format in excel for successful `XLOOKUP`
+  group_by(AUN) %>% summarise(numdups=sum(if_else(n==1,0,n)))
+
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(pdups,"cz.xlsx")
+write_xlsx(sdups,"da.xlsx")
 
 # alternatively put all vars for masterdatasheet into one file ------------------------------------
 
