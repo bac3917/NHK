@@ -43,6 +43,11 @@ s_undup<-s2 %>%
   ungroup()
 #saveRDS(s_undup,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/s_undup.RDS")
 
+# Load Unduplicated Datasets (Start here) -----------
+library(tidyverse);library(janitor)
+s_undup<-readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/s_undup.RDS")
+p_undup<-readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/p_undup.RDS")
+
 # Begin analysis here with p_undup and s_undup!
 
 ## use school names to match to rows in datasheet
@@ -232,7 +237,13 @@ case_number_mismatches <- match1 %>%
   filter(sebt_case_number != primero_case_number) %>%
   group_by(sebt_aun9_3) %>%
   summarise(case_number_mismatch_count = n(), .groups = "drop") %>%
-  rename(AUN = sebt_aun9_3)
+  rename(AUN = sebt_aun9_3) %>%
+  mutate(AUN=str_replace_all(AUN,"-","")) %>%
+  arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
+  mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
+
+setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+write_xlsx(case_number_mismatches,"cv.xlsx")
 
 # Column CW & CX --------------------------------
 
@@ -260,7 +271,7 @@ pIDcounts <- p_undup %>%
   summarise(primero_Under10=sum(under10chars))
 
 
-temp<-sIDcounts %>% left_join(pIDcounts,by=c("sebt_aun9_3"="primero_aun9_3")) %>%
+cw<-sIDcounts %>% left_join(pIDcounts,by=c("sebt_aun9_3"="primero_aun9_3")) %>%
   rename(AUN=sebt_aun9_3) %>% 
   mutate(AUN=str_replace_all(AUN,"-","")) %>% 
   arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
@@ -275,7 +286,7 @@ temp %>% filter(str_detect(sfa_name,"First"))
 # Column CY --------------------------------
 # number of students per AUN
 
-temp<-match1 %>% group_by(sebt_aun9_3) %>%
+cy<-match1 %>% group_by(sebt_aun9_3) %>%
   summarise(n=n()) %>% mutate(AUN=str_replace_all(sebt_aun9_3,"-","")) %>%
   arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
   mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
