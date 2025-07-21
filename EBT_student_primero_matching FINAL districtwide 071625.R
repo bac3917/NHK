@@ -77,30 +77,19 @@ tabyl(duplicated(match1$join_key))
 ## CG - Total Student Count in PrimeroEdge File (this includes duplicate student records)
 ## CH - Total student count in student upload file (this includes duplicate student records)
 
-        # Count students per AUN in each dataset using the UNIQUE student set
-        p_counts <- p_undup %>%
-          group_by(primero_aun9_3) %>%
-          summarise(p_total = n(), .groups = "drop")
-        
-        s_counts <- s_undup %>%
-          group_by(sebt_aun9_3) %>%
-          summarise(s_total = n(), .groups = "drop")
+p_total_student_count<-p_undup %>% group_by(primero_aun9_3) %>% summarise(n=n())%>% 
+  mutate(AUN=str_replace_all(primero_aun9_3,"-","")) %>%
+  left_join(mds,by=c("AUN"="aun_2")) %>% mutate(AUN=as.numeric(AUN))
 
-        # Merge and compute difference
-        student_counts_by_aun <- full_join(p_counts, s_counts,
-                                           by = c("primero_aun9_3" = "sebt_aun9_3")) %>%
-          rename(AUN = primero_aun9_3) %>%
-          mutate(AUN=str_replace_all(AUN,"-","")) %>%
-          mutate(across(c(p_total, s_total), ~replace_na(., 0)),
-                 difference = p_total - s_total)
-        
-        student_counts_by_aun<-student_counts_by_aun %>% left_join(mds,by=c("AUN"="aun_2"))
-        cg_ch<-student_counts_by_aun %>% select(sfa_name, AUN,s_total,p_total,difference) %>%
-          mutate(AUN=as.numeric(AUN)) %>% arrange(AUN)
-        
-        cg_ch %>% filter(str_detect(sfa_name,"Chambers") )
+s_total_student_count<-s_undup %>% group_by(sebt_aun9_3) %>% summarise(n=n()) %>%
+  mutate(AUN=str_replace_all(sebt_aun9_3,"-","")) %>%
+  left_join(mds,by=c("AUN"="aun_2")) %>% mutate(AUN=as.numeric(AUN))
 
-        write_xlsx(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.xlsx")
+#examine
+s_total_student_count %>% filter(str_detect(sfa_name,"Chambers") )
+
+write_xlsx(s_total_student_count,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/CH.xlsx")
+write_xlsx(p_total_student_count,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/CG.xlsx")
 
   
 # find unmatched
@@ -307,8 +296,7 @@ cy %>% filter(str_detect(sfa_name,"People for")) #examine
 write_xlsx(temp,"cy.xlsx")
 
 # Columns CZ and DA ---------------
-# duplicate student records (PA-SES File)
-# duplicate student records (June file)
+# number of students that appear twice in file  (PA-SES File & primero file)
 sdups<-s2 %>% 
   group_by(join_key) %>% 
   summarise(n=n(), AUN=first(sebt_aun9_3),leaname=first(sebt_sfa_name)) %>%
@@ -317,7 +305,9 @@ sdups<-s2 %>%
   left_join(mds,by=c("AUN"="aun_2")) %>%
   group_by(AUN) %>%
   # how many records have n>1?
-  summarise(num_duplicated_join_keys = sum(n>1),numsts=n(), .groups = "drop")
+  summarise(num_duplicated_student_join_keys = sum(n>1),numsts=n(), .groups = "drop") 
+
+  #mutate(num_students_with_dups=if_else(num_duplicated_join_keys>0))
 
 # examine 113363103;
 sdups %>% filter(AUN==113363103 | AUN==113362203) %>% View()
@@ -333,11 +323,11 @@ pdups<-p2 %>% group_by(join_key) %>%
   left_join(mds,by=c("AUN"="aun_2")) %>%
   group_by(AUN) %>%
   # how many records have n>1?
-  summarise(num_duplicated_join_keys = sum(n>1),numsts=n(), .groups = "drop")
+  summarise(num_duplicated_primero_join_keys = sum(n>1),numsts=n(), .groups = "drop")
 
 fre(pdups$num_duplicated_join_keys)
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
-write_xlsx(pdups,"cz.xlsx")
+write_xlsx(pdups,"cz.xlsx",)
 write_xlsx(sdups,"da.xlsx")
 
 # alternatively put all vars for masterdatasheet into one file ------------------------------------
