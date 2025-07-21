@@ -58,12 +58,14 @@ mds<-janitor::clean_names(mds)
 mds$aun_2<-as.character(mds$aun_2)
 mds<-mds %>% select(aun_2,sfa_name,schl_type)
 
+
 # PURPLE COLUMN MEASURES START HERE --------
 # analyses are based on records that match by `join_key` for unduplicated students
 match1 <- inner_join(p_undup, s_undup, by = "join_key")
 tabyl(duplicated(match1$join_key))
 tabyl(duplicated(match1$join_key))
 
+# Columns CG and CH -----
 
 ## CG - Total Student Count in PrimeroEdge File (this includes duplicate student records)
 ## CH - Total student count in student upload file (this includes duplicate student records)
@@ -88,7 +90,10 @@ tabyl(duplicated(match1$join_key))
         student_counts_by_aun<-student_counts_by_aun %>% left_join(mds,by=c("AUN"="aun_2"))
         cg_ch<-student_counts_by_aun %>% select(sfa_name, AUN,s_total,p_total,difference) %>%
           mutate(AUN=as.numeric(AUN)) %>% arrange(AUN)
-        write_xlsx(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.xlsx")
+        
+        cg_ch %>% filter(str_detect(sfa_name,"Chambers") )
+
+                                 write_xlsx(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.xlsx")
 
   
 # find unmatched
@@ -294,6 +299,8 @@ setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and
 write_xlsx(temp,"cy.xlsx")
 
 # Columns CZ and DA ---------------
+# duplicate student records (PA-SES File)
+# duplicate student records (June file)
 sdups<-s2 %>% 
   group_by(join_key) %>% 
   summarise(n=n(), AUN=first(sebt_aun9_3),leaname=first(sebt_sfa_name)) %>%
@@ -398,8 +405,10 @@ saveRDS(filtered_data, file = file.path(folder_path, "ALLstudentfiles.rds"))
 
 # Examine the Master Data Sheet ------
 library(readxl)
-m <- read_excel("//csc-profiles/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/NKH Master Data Sheet_local_copy.xlsx", 
+m <- read_excel("//csc-profiles/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/NKH Master Data Sheet_local_copy2.xlsx", 
                 skip = 3)
+m<-clean_names(m);colnames(m)<-substr(colnames(m),1,25)
+hist(m$number_of_duplicate_stude -  m$total_student_count_pases)
 
 m$missingaddresscount<-ifelse(is.na(m$`Matched Students -  Student Address Count Diff`),1,0)
 
