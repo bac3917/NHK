@@ -8,9 +8,8 @@ library(janitor);library(expss); library(stringdist); library(writexl)
 p2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSprimerofiles/primerofiles.rds")
 s2 <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSstudentfiles/ALLstudentfiles.rds")
 
-## Create unique IDs  --------------------------------------------------------
+## Create unique student IDs  --------------------------------------------------------
 
-# Create join keys
 p2 <- p2 %>%
   mutate(join_key1 = paste0(primero_aun9_3, "_",primero_pasecureid),
          join_key2 = paste0(primero_aun9_3, "_", primero_student_first_name, "_", primero_student_last_name, "_", primero_student_dob))
@@ -19,7 +18,7 @@ s2 <- s2 %>%
   mutate(join_key1 = paste0(sebt_aun9_3, "_", sebt_pasecureid ),
          join_key2 = paste0(sebt_aun9_3, "_", sebt_student_first_name, "_", sebt_student_last_name, "_", sebt_student_dob))
 
-# Decide which key to use
+# Decide which key to use depending on ID length
 p2 <- p2 %>%
   mutate(join_key = if_else( nchar(primero_pasecureid)>10 | nchar(primero_pasecureid<10) , join_key2,join_key1))
 tabyl(duplicated(p2$join_key))
@@ -31,6 +30,14 @@ tabyl(duplicated(s2$join_key))
 # count number of missing columns
 p2<-p2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
 s2<-s2 %>% group_by(join_key) %>% mutate(missing_count = rowSums(is.na(across(everything()))), .groups = "drop")
+
+
+dup_students<-s2 %>% 
+  group_by(sebt_pasecureid ) %>% 
+  summarise(sebt_aun9_3=first(sebt_aun9_3),num_duplicated_join_keys = sum(n()>1)) %>%
+  mutate(AUN=str_replace_all(sebt_aun9_3,"-","")) %>%
+  left_join(mds,by=c("AUN"="aun_2"))
+dup_students %>% filter(str_detect(sfa_name,"Chamber"))
 
 # Before joining, ensure each file has best unique set of cases
 # if duplicated join_key slice to the row with least missing data
@@ -93,7 +100,7 @@ tabyl(duplicated(match1$join_key))
         
         cg_ch %>% filter(str_detect(sfa_name,"Chambers") )
 
-                                 write_xlsx(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.xlsx")
+        write_xlsx(cg_ch,"//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/cg_ch.xlsx")
 
   
 # find unmatched
