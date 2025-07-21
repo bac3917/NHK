@@ -303,6 +303,7 @@ cy<-match1 %>% group_by(sebt_aun9_3) %>%
   arrange(AUN) %>% left_join(mds,by=c("AUN"="aun_2")) %>%
   mutate(AUN=as.numeric(AUN)) # need to match format in excel for successful `XLOOKUP`
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/import_to_master_data_sheet/')
+cy %>% filter(str_detect(sfa_name,"People for")) #examine
 write_xlsx(temp,"cy.xlsx")
 
 # Columns CZ and DA ---------------
