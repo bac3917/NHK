@@ -1,5 +1,3 @@
-rm(list=ls())
-
 library(readxl);library(tidyverse); library(tidyr); library(dplyr)
 library(janitor);library(expss); library(stringdist); library(writexl)
 library(readr)
@@ -130,7 +128,7 @@ read_and_standardize_csvs <- function(folder_path, new_colnames) {
   return(combined_df)
 }
 
-#determine new colnames
+#determine new unified colnames
 new_colnames <- c(
   "LEAname", "AUN", "sitename", "siteID", "studentID", "studentfirstname", 
   "studentmiddlename", "studentlastname", "studentDOB", "studentaddress1", 
@@ -140,6 +138,7 @@ new_colnames <- c(
 )
 
 #DC-Only June files dataframe
+#read in csv files with new colnames
 june_data <- read_and_standardize_csvs("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) June files", new_colnames)
 #drop na rows (determined by missing/invalid AUN)
 june_data <- june_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", june_data$AUN), ]
@@ -147,6 +146,7 @@ june_data <- june_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", june_data$AUN), ]
 june_data$usertype <- "DC only"
 
 #Dc-Only PA-SES files dataframe
+#read in csv files with new colnames
 pases_data <- read_and_standardize_csvs("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) PA-SES files", new_colnames)
 #fix AUn for CAI learning academy
 pases_data$AUN[pases_data$AUN == "NoA-UN-#-"] <- "321-39-275-7"
@@ -168,8 +168,6 @@ table(bad_aun_rows)
 
 
 
-
-
 # Full user files, load in and unify with colnames ------------------------
 
 FU_june_data <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSstudentfiles/ALLstudentfiles.rds")
@@ -179,7 +177,7 @@ FU_pases_data <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initi
 colnames(FU_june_data)[1:25] <- new_colnames
 colnames(FU_pases_data)[1:25] <- new_colnames
 
-#clean FU df, remove invalid/missing AUN rows, add usertype column
+#clean FU dfs, remove invalid/missing AUN rows, add usertype column
 FU_june_data <- FU_june_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", FU_june_data$AUN), ]
 FU_june_data$usertype <- "Full User"
 
