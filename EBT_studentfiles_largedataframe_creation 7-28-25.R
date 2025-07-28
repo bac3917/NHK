@@ -7,7 +7,7 @@ library(readr)
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/')
 
 
-# messy, make dataframewith headers to check ------------------------------
+# messy, make dataframewith headers to check file structure (ignore) ------------------------------
 
 
 #function to read in fileheaders and rename headers
@@ -54,13 +54,17 @@ new_colnames <- c(
   "parentphone", "parentemail", "enrollbegin", "enrollend", "validationoutput"
 )
 
-June_folder_path <- "//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) June files"
+#DC-Only June
+june_folder_path <- "//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) June files"
+Juneheader_df <- read_csv_headers_rename(june_folder_path, new_colnames)
+#DC-Only PA-SES
+pases_folder_path <- "//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) PA-SES files"
+pasesheader_df <- read_csv_headers_rename(pases_folder_path, new_colnames)
 
-Juneheader_df <- read_csv_headers_rename(June_folder_path, new_colnames)
 
 
 
-
+# fixing individual cases (ignore) -------------------------------------------------
 
 
 
@@ -86,10 +90,9 @@ Juneheader_df <- rbind(Juneheader_df, new_row)
 
 
 
-# creating dataframes -----------------------------------------------------
+# creating dataframes for the new DC-only files -----------------------------------------------------
 
-
-
+#function to read csvs and standardize colnames
 read_and_standardize_csvs <- function(folder_path, new_colnames) {
   file_list <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
   
@@ -126,6 +129,8 @@ read_and_standardize_csvs <- function(folder_path, new_colnames) {
   
   return(combined_df)
 }
+
+#determine new colnames
 new_colnames <- c(
   "LEAname", "AUN", "sitename", "siteID", "studentID", "studentfirstname", 
   "studentmiddlename", "studentlastname", "studentDOB", "studentaddress1", 
@@ -134,4 +139,66 @@ new_colnames <- c(
   "parentphone", "parentemail", "enrollbegin", "enrollend", "validationoutput"
 )
 
+#DC-Only June files dataframe
 june_data <- read_and_standardize_csvs("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) June files", new_colnames)
+#drop na rows (determined by missing/invalid AUN)
+june_data <- june_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", june_data$AUN), ]
+#create usertype column
+june_data$usertype <- "DC only"
+
+#Dc-Only PA-SES files dataframe
+pases_data <- read_and_standardize_csvs("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) PA-SES files", new_colnames)
+#fix AUn for CAI learning academy
+pases_data$AUN[pases_data$AUN == "NoA-UN-#-"] <- "321-39-275-7"
+#drop na rows (determined by missing/invalid AUN)
+pases_data <- pases_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", pases_data$AUN), ]
+#create usertype column
+pases_data$usertype <- "DC only"
+
+# cleaning/checking dataframe (ignore) ---------------------------------------------
+
+length(unique(pases_data$AUN))
+table(pases_data$AUN)
+# Identify rows where AUN format is incorrect
+bad_aun_rows <- !grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", june_data$AUN)
+
+# View the bad rows
+june_data[bad_aun_rows, ]
+table(bad_aun_rows)
+
+
+
+
+
+# Full user files, load in and unify with colnames ------------------------
+
+FU_june_data <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSstudentfiles/ALLstudentfiles.rds")
+FU_pases_data <- readRDS("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Filematcher Input/RDSprimerofiles/primerofiles.rds")
+
+#unified colnames for FU files
+colnames(FU_june_data)[1:25] <- new_colnames
+colnames(FU_pases_data)[1:25] <- new_colnames
+
+#clean FU df, remove invalid/missing AUN rows, add usertype column
+FU_june_data <- FU_june_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", FU_june_data$AUN), ]
+FU_june_data$usertype <- "Full User"
+
+FU_pases_data <- FU_pases_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", FU_pases_data$AUN), ]
+FU_pases_data$usertype <- "Full User"
+
+
+# combine Fulluser and DC only datasets for both filetypes ----------------
+
+#all June files df
+all_june_files <- bind_rows(june_data, FU_june_data)
+
+# all PA-SES files df
+# error: site ID format -- Convert siteID to character in both dataframes
+pases_data$siteID <- as.character(pases_data$siteID)
+FU_pases_data$siteID <- as.character(FU_pases_data$siteID)
+#now create df
+all_pases_files <- bind_rows(pases_data, FU_pases_data)
+
+
+
+
