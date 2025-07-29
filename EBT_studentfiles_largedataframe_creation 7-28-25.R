@@ -18,64 +18,6 @@ new_colnames <- c(
   "parentphone", "parentemail", "enrollbegin", "enrollend", "validationoutput"
 )
 
-# messy, make dataframewith headers to check file structure (ignore) ------------------------------
-
-
-#function to read in fileheaders and rename headers
-read_csv_headers_rename <- function(folder_path, new_colnames) {
-  file_list <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
-  
-  header_rows <- lapply(file_list, function(file) {
-    message("Reading: ", file)
-    
-    header_line <- tryCatch(readLines(file, n = 1, warn = FALSE), error = function(e) NA)
-    
-    if (is.na(header_line)) return(NULL)
-    
-    split_header <- strsplit(header_line, ",")[[1]]
-    
-    # Pad with empty strings if fewer than 25
-    if (length(split_header) < 25) {
-      split_header <- c(split_header, rep("", 25 - length(split_header)))
-    }
-    
-    # Still fail if somehow *more* than 25 columns
-    if (length(split_header) != 25) {
-      warning("Unexpected number of columns in file: ", file)
-      return(NULL)
-    }
-    
-    # Replace names with the standard list
-    names_row <- setNames(as.list(new_colnames), new_colnames)
-    return(as.data.frame(names_row, stringsAsFactors = FALSE))
-  })
-  
-  header_rows <- Filter(Negate(is.null), header_rows)
-  
-  header_df <- do.call(rbind, header_rows)
-  
-  return(header_df)
-}
-
-new_colnames <- c(
-  "LEAname", "AUN", "sitename", "siteID", "studentID", "studentfirstname", 
-  "studentmiddlename", "studentlastname", "studentDOB", "studentaddress1", 
-  "studentaddress2", "aptnum", "city", "state", "zip", "eligibility", 
-  "addresscounty", "casenumber", "parentfirstname", "parentlastname", 
-  "parentphone", "parentemail", "enrollbegin", "enrollend", "validationoutput"
-)
-
-#DC-Only June
-june_folder_path <- "//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) June files"
-Juneheader_df <- read_csv_headers_rename(june_folder_path, new_colnames)
-#DC-Only PA-SES
-pases_folder_path <- "//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) PA-SES files"
-pasesheader_df <- read_csv_headers_rename(pases_folder_path, new_colnames)
-
-
-
-
-
 # creating dataframes for the new DC-only files -----------------------------------------------------
 
 #function to read csvs and standardize colnames for Dc Only
