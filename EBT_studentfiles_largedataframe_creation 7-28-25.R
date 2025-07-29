@@ -1,9 +1,20 @@
+#kill button
+rm(list = ls())
+
 library(readxl);library(tidyverse); library(tidyr); library(dplyr)
 library(janitor);library(expss); library(stringdist); library(writexl)
 library(readr)
 
 setwd('//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/')
 
+#determine new unified colnames
+new_colnames <- c(
+  "LEAname", "AUN", "sitename", "siteID", "studentID", "studentfirstname", 
+  "studentmiddlename", "studentlastname", "studentDOB", "studentaddress1", 
+  "studentaddress2", "aptnum", "city", "state", "zip", "eligibility", 
+  "addresscounty", "casenumber", "parentfirstname", "parentlastname", 
+  "parentphone", "parentemail", "enrollbegin", "enrollend", "validationoutput"
+)
 
 # messy, make dataframewith headers to check file structure (ignore) ------------------------------
 
@@ -62,31 +73,6 @@ pasesheader_df <- read_csv_headers_rename(pases_folder_path, new_colnames)
 
 
 
-# fixing individual cases (ignore) -------------------------------------------------
-
-
-
-# Path to your fixed file
-fixed_file <- "//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) June files/SEBT2025_1_113385303_20250611-115252.csv"
-
-# Read just that one file using the same logic
-header_line <- readLines(fixed_file, n = 1, warn = FALSE)
-line_clean <- gsub('"', '', header_line)
-line_clean <- trimws(line_clean)
-split_header <- strsplit(line_clean, ",")[[1]]
-
-# Standardize to 25 columns
-if (length(split_header) < 25) {
-  split_header <- c(split_header, rep("", 25 - length(split_header)))
-} else if (length(split_header) > 25) {
-  split_header <- split_header[1:25]
-}
-
-# Build one-row data frame
-new_row <- as.data.frame(setNames(as.list(new_colnames), new_colnames), stringsAsFactors = FALSE)
-Juneheader_df <- rbind(Juneheader_df, new_row)
-
-
 
 # creating dataframes for the new DC-only files -----------------------------------------------------
 
@@ -128,22 +114,65 @@ read_and_standardize_csvs <- function(folder_path, new_colnames) {
   return(combined_df)
 }
 
-#determine new unified colnames
-new_colnames <- c(
-  "LEAname", "AUN", "sitename", "siteID", "studentID", "studentfirstname", 
-  "studentmiddlename", "studentlastname", "studentDOB", "studentaddress1", 
-  "studentaddress2", "aptnum", "city", "state", "zip", "eligibility", 
-  "addresscounty", "casenumber", "parentfirstname", "parentlastname", 
-  "parentphone", "parentemail", "enrollbegin", "enrollend", "validationoutput"
-)
+
 
 #DC-Only June files dataframe
 #read in csv files with new colnames
 june_data <- read_and_standardize_csvs("//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) June files", new_colnames)
 #drop na rows (determined by missing/invalid AUN)
-june_data <- june_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", june_data$AUN), ]
+june_data <- june_data[grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", june_data$AUN),  ]
 #create usertype column
 june_data$usertype <- "DC only"
+
+# fixing individual cases (ignore) -------------------------------------------------
+
+
+
+# Path to your fixed file
+fixed_file <- "//192.168.1.68/Research_and_Evaluation_Group/CSC_Initiatives/NKH/data_and_analysis/data/Non-Full-Users student files/(NON FU) June files/SEBT2025_1_113385303_20250611-115252.csv"
+
+# Read just that one file using the same logic
+header_line <- readLines(fixed_file, n = 1, warn = FALSE)
+line_clean <- gsub('"', '', header_line)
+line_clean <- trimws(line_clean)
+split_header <- strsplit(line_clean, ",")[[1]]
+
+# Standardize to 25 columns
+if (length(split_header) < 25) {
+  split_header <- c(split_header, rep("", 25 - length(split_header)))
+} else if (length(split_header) > 25) {
+  split_header <- split_header[1:25]
+}
+
+# Build one-row data frame
+new_row <- as.data.frame(setNames(as.list(new_colnames), new_colnames), stringsAsFactors = FALSE)
+Juneheader_df <- rbind(Juneheader_df, new_row)
+
+# temp AUN corrections test zone ----------------------------------------------------
+
+#filter to drop rows that are completely blank
+june_data_missingstudents <- june_data %>%
+  filter(!is.na(studentfirstname) & studentfirstname != "")
+#create AUN
+june_data_missingstudents <- june_data_missingstudents %>%
+  mutate(AUN_copy = AUN) %>%
+  relocate(AUN_copy, .after = AUN)
+june_data_missingstudents$AUN_copy[22840] <- "test"
+
+
+
+#find the weird AUNs that need to be maunally cleaned
+length(unique(june_data_missingstudents$AUN))
+table(june_data_missingstudents$AUN)
+
+#remove rows missing AUN that cant be manually fixed
+june_data_missingstudents <- june_data_miss %>%
+  filter(grepl("^\\d{3}-\\d{2}-\\d{3}-\\d{1}$", AUN_copy))
+
+
+
+
+
 
 #Dc-Only PA-SES files dataframe
 #read in csv files with new colnames
@@ -196,6 +225,7 @@ pases_data$siteID <- as.character(pases_data$siteID)
 FU_pases_data$siteID <- as.character(FU_pases_data$siteID)
 #now create df
 all_pases_files <- bind_rows(pases_data, FU_pases_data)
+
 
 
 
